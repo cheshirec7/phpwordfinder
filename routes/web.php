@@ -6,3 +6,4 @@
 
 
 $router->get('find', 'MyController@find');
+$router->get('define/{word}', 'MyController@define');

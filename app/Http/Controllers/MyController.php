@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\Response;
 
 class MyController extends Controller
 {
@@ -245,8 +246,8 @@ class MyController extends Controller
         if ($return_type == self::RETURN_TYPE_JSON)
             return response()->json($json_arr)
                 ->withHeaders([
-                'Access-Control-Allow-Origin' => '*',
-            ]);
+                    'Access-Control-Allow-Origin' => '*',
+                ]);
 
         $result = '<h5 id="resultsFor">Results for <span>';
         $result .= $tray;
@@ -257,4 +258,77 @@ class MyController extends Controller
             ->header('Access-Control-Allow-Origin', '*');
     }
 
+    // This function grabs the definition of a word in XML format.
+    function define($word)
+    {
+        $ref = env('DICT_REFERENCES');
+        $key = env('DICT_KEY');
+        $uri = "https://www.dictionaryapi.com/api/v1/references/" . urlencode($ref) . "/xml/" .
+            urlencode($word) . "?key=" . urlencode($key);
+        $xml = file_get_contents($uri);
+        $xml = simplexml_load_string($xml);
+        $xml = json_decode(json_encode((array)$xml), 1);
+
+//        return response()->json($xml)
+//            ->withHeaders([
+//                'Access-Control-Allow-Origin' => '*',
+//            ]);
+
+        $res = '';
+        if (!(array_key_exists('entry', $xml))) {
+            $res = "No definition found.";
+        } else {
+            if (!array_key_exists('0', $xml['entry'])) {
+                if (array_key_exists('def', $xml['entry'])) {
+                    $defs = $xml['entry']['def']['dt'];
+                    if (is_array($defs)) {
+                        $i = 0;
+                        foreach ($defs as $def) {
+                            $tmp = trim(str_replace(":", "", $def));
+                            if ($tmp)
+                                $res .= $tmp . '; ';
+                            $i++;
+                            if ($i > 2)
+                                break;
+                        }
+                    } else {
+                        $tmp = trim(str_replace(":", "", $defs));
+                        if ($tmp)
+                            $res .= $tmp . '; ';
+                    }
+                    $res = substr($res, 0, -2);
+                } else
+                    $res = "No definition found.";
+            } else {
+                $j = 0;
+                foreach ($xml['entry'] as $entry) {
+                    if (is_array($entry) && array_key_exists('def', $entry)) {
+                        $defs = $entry['def']['dt'];
+                        if (is_array($defs)) {
+                            $i = 0;
+                            foreach ($defs as $def) {
+                                $tmp = trim(str_replace(":", "", $def));
+                                if ($tmp)
+                                    $res .= $tmp . '; ';
+                                $i++;
+                                if ($i > 2)
+                                    break;
+                            }
+                        } else {
+                            $tmp = trim(str_replace(":", "", $defs));
+                            if ($tmp)
+                                $res .= $tmp . '; ';
+                        }
+                    }
+                    $j++;
+                    if ($j > 2)
+                        break;
+                }
+                $res = substr($res, 0, -2);
+            }
+        }
+
+        return (new Response(ucfirst($res), 200))
+            ->header('Access-Control-Allow-Origin', '*');
+    }
 }
