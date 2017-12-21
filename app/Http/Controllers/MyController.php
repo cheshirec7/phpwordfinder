@@ -35,9 +35,6 @@ class MyController extends Controller
     private $total_found = 0;
     private $letter_counts_arr = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     private $cache_count = 0;
-    private $twentysix_zeros_arr = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    # most_to_least_common = (E, A, R, I, O, T, N, S, L, C, U, D, P, M, H, G, B, F, Y, W, K, V, X, Z, J, Q)
-    private $most_to_least_common = array(4, 0, 17, 8, 14, 19, 13, 18, 11, 2, 20, 3, 15, 12, 7, 6, 1, 5, 24, 22, 10, 21, 23, 25, 9, 16);
     private $pubpath = '';
 
     /**
@@ -106,16 +103,16 @@ class MyController extends Controller
     {
         $num_found = count($words_arr);
         foreach ($words_arr as $i => $word) {
-            $ana_key_letter_counts_arr = $this->twentysix_zeros_arr;
-            for ($j = 0; $j < $word_len; $j++)
-                $ana_key_letter_counts_arr[ord($word[$j]) - self::ASCII_a]++;
-            for ($j = 0; $j < 26; $j++) {
+            $letter_counts_arr = $this->letter_counts_arr; //copy of the array
+            for ($j = 0; $j < $word_len; $j++) {
                 $this->total_compares++;
-                $idx = $this->most_to_least_common[$j];
-                if ($this->letter_counts_arr[$idx] - $ana_key_letter_counts_arr[$idx] < 0) {
+                $idx = ord($word[$j]) - self::ASCII_a;
+                if ($letter_counts_arr[$idx] == 0) {
                     $words_arr[$i] = NULL;
                     $num_found--;
                     break;
+                } else {
+                    $letter_counts_arr[$idx] -= 1;
                 }
             }
         }
@@ -134,21 +131,22 @@ class MyController extends Controller
     {
         $num_found = count($words_arr);
         foreach ($words_arr as $i => $word) {
-            $ana_key_letter_counts_arr = $this->twentysix_zeros_arr;
-            for ($j = 0; $j < $word_len; $j++)
-                $ana_key_letter_counts_arr[ord($word[$j]) - self::ASCII_a]++;
-            $wild_avail = $wild_count;
-            for ($j = 0; $j < 26; $j++) {
+            $letter_counts_arr = $this->letter_counts_arr; //copy of the array
+            $local_wild_count = $wild_count;
+            for ($j = 0; $j < $word_len; $j++) {
                 $this->total_compares++;
-                $idx = $this->most_to_least_common[$j];
-                $diff = $this->letter_counts_arr[$idx] - $ana_key_letter_counts_arr[$idx];
-                if ($diff < 0) {
-                    $wild_avail += $diff;
-                    if ($wild_avail < 0) {
+                $idx = ord($word[$j]) - self::ASCII_a;
+
+                if ($letter_counts_arr[$idx] == 0) {
+                    if ($local_wild_count == 0) {
                         $words_arr[$i] = NULL;
                         $num_found--;
                         break;
+                    } else {
+                        $local_wild_count -= 1;
                     }
+                } else {
+                    $letter_counts_arr[$idx] -= 1;
                 }
             }
         }
