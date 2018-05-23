@@ -14,14 +14,14 @@ class ForceHttps
      * @param  \Closure $next
      * @return mixed
      */
-    public function handle(Request $request, Closure $next)
+    public function handle($request, Closure $next)
     {
         if (!app()->environment('local')) {
             // for Proxies
-//            Request::setTrustedProxies([$request->getClientIp()]);
+            Request::setTrustedProxies([$request->getClientIp()], -1);
 
             if (!$request->isSecure()) {
-                return redirect($request->getRequestUri(), 301, [], true);
+                return redirect()->secure($request->getRequestUri());
             }
         }
 
